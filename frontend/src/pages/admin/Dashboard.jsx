@@ -3,7 +3,7 @@ import {
   DollarSign, ShoppingBag, Users, Package, 
   TrendingUp, AlertTriangle, ArrowUpRight, ArrowDownRight 
 } from 'lucide-react'
-import api from '../services/api.js'
+import api from '../../services/api.js'
 
 const StatCard = ({ title, value, icon: Icon, trend, trendUp, color }) => (
   <div className="glass rounded-xl p-6">
