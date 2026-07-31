@@ -7,8 +7,8 @@ import cookieParser from 'cookie-parser';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import dotenv from 'dotenv';
-import path from 'path';
 import { fileURLToPath } from 'url';
+import path from 'path';
 
 import { connectDB } from './config/database.js';
 import { logger } from './utils/logger.js';
@@ -28,10 +28,13 @@ import {
   notificationRoutes,
 } from './routes/index.js';
 
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load .env from backend root (one level up from src/) and repo root (two levels up).
+// On Vercel, env vars are injected directly so this is a no-op there.
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 

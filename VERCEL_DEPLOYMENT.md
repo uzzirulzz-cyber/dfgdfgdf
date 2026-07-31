@@ -7,7 +7,11 @@ This repository is a **monorepo** with two independently deployable apps:
 | Frontend | `frontend/` | React + Vite | `playbeat-web` | `playbeat.digital` |
 | Backend  | `backend/`  | Node.js + Express (serverless) | `playbeat-api` | `api.playbeat.digital` |
 
-The frontend talks to the backend via `VITE_API_URL`. The backend stores data in MongoDB Atlas and uses Stripe for payments, Nodemailer for email, and JWT for auth.
+The frontend talks to the backend via `VITE_API_URL`. The backend stores data in **MongoDB Atlas** (via Mongoose) and uses Stripe for payments, Nodemailer for email, and JWT for auth.
+
+> ⚠️ **Database note (read this before deploying):** The backend uses **MongoDB / Mongoose** for all data access. A `backend/src/config/postgres.js` file exists in the repo as scaffolding for a future Postgres migration, and `backend/src/config/schema.sql` contains the proposed SQL schema — but **neither is wired up**. The 13 model files in `backend/src/models/` and all 10 controllers are written against Mongoose.
+>
+> To make the app work today, you need a **MongoDB Atlas** URI (free M0 tier is fine). A Neon Postgres URL alone is NOT enough — using it would require migrating every model and controller from Mongoose to raw SQL (or a Postgres ORM like Prisma). That migration is out of scope of this deployment guide.
 
 ---
 

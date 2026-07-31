@@ -3,6 +3,29 @@ import { logger } from '../utils/logger.js';
 
 let pool = null;
 
+/**
+ * Build the SSL config for the pg Pool.
+ *
+ * Neon (and most cloud Postgres providers) require SSL. The connection string
+ * from Neon includes `sslmode=require` and `channel_binding=require`. The `pg`
+ * library parses `sslmode=require` into a basic SSL request, but on many
+ * runtimes (including Vercel serverless and Node 18+ on Linux) we need to
+ * explicitly allow the connection because the system CA bundle may not be
+ * picked up automatically.
+ *
+ * For local dev we keep ssl off so a plain local Postgres works too.
+ */
+const buildSslConfig = (connectionString) => {
+  // If the URL explicitly asks for sslmode=require or verify-full, honour it.
+  const wantsSsl = /sslmode\s*=\s*(require|verify-full|verify-ca|prefer)/i.test(connectionString);
+  const isProd = process.env.NODE_ENV === 'production';
+
+  if (wantsSsl || isProd) {
+    return { rejectUnauthorized: false }; // permissive — Neon cert chain
+  }
+  return false;
+};
+
 export const connectDB = async () => {
   if (pool) return pool;
 
@@ -12,24 +35,34 @@ export const connectDB = async () => {
     throw new Error('DATABASE_URL or POSTGRES_URL environment variable is required');
   }
 
+  // Log a redacted version of the URL so we can debug without leaking creds.
+  const redacted = connectionString.replace(/\/\/([^:]+):([^@]+)@/, '//$1:***@');
+  logger.info(`Connecting to PostgreSQL: ${redacted}`);
+
   try {
     pool = new Pool({
       connectionString,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      ssl: buildSslConfig(connectionString),
       max: 10,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
+      connectionTimeoutMillis: 10000,
+    });
+
+    // Surface pool errors (e.g. idle disconnects) instead of silently dropping them.
+    pool.on('error', (err) => {
+      logger.error(`PostgreSQL pool error: ${err.message}`);
     });
 
     // Test connection
     const client = await pool.connect();
-    const result = await client.query('SELECT NOW()');
+    const result = await client.query('SELECT NOW() as now, current_database() as db');
     client.release();
 
-    logger.info(`PostgreSQL Connected: ${result.rows[0].now}`);
+    logger.info(`PostgreSQL Connected: ${result.rows[0].now} (db: ${result.rows[0].db})`);
     return pool;
   } catch (error) {
     logger.error(`PostgreSQL Connection Error: ${error.message}`);
+    logger.error(`Error code: ${error.code || 'n/a'}`);
     throw error;
   }
 };
@@ -61,5 +94,13 @@ export const transaction = async (callback) => {
     throw error;
   } finally {
     client.release();
+  }
+};
+
+export const disconnectDB = async () => {
+  if (pool) {
+    await pool.end();
+    pool = null;
+    logger.info('PostgreSQL Pool Closed');
   }
 };
