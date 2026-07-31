@@ -57,8 +57,13 @@ const useAuthStore = create((set, get) => ({
       localStorage.setItem('user', JSON.stringify(data.user))
       set({ user: data.user })
       return data.user
-    } catch {
-      get().logout()
+    } catch (err) {
+      // Only clear auth state on an explicit auth rejection (401).
+      // Network errors, CORS hiccups, or temporary backend downtime should
+      // NOT log the user out — they'll just keep the cached user object.
+      if (err.response?.status === 401) {
+        get().logout()
+      }
     }
   },
 

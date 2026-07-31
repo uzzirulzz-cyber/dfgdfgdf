@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Zap } from 'lucide-react'
 import useAuthStore from '../services/authStore.js'
+
+const adminRoles = ['admin', 'super_admin', 'manager', 'support_agent']
 
 const LoginPage = () => {
   const [email, setEmail] = useState('')
@@ -9,13 +11,24 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false)
   const { login, isLoading, error, clearError } = useAuthStore()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     clearError()
     try {
-      await login(email, password)
-      navigate('/')
+      const data = await login(email, password)
+      // If there's a ?redirect= query param (e.g. from AdminRoute), go there
+      const redirect = searchParams.get('redirect')
+      if (redirect) {
+        navigate(redirect, { replace: true })
+      } else if (adminRoles.includes(data.user?.role)) {
+        // Admin users land on the admin dashboard
+        navigate('/admin', { replace: true })
+      } else {
+        // Regular customers land on the home page
+        navigate('/', { replace: true })
+      }
     } catch {}
   }
 
