@@ -38,6 +38,11 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 
+// Vercel (and most production hosts) run behind a reverse proxy. Without this,
+// express-rate-limit sees the proxy's IP for every request and rate-limits
+// everyone together; on some setups it also hangs on req.ip access.
+app.set('trust proxy', 1);
+
 // Connect to database
 connectDB().catch(err => {
   logger.error(`Failed to connect to database: ${err.message}`);

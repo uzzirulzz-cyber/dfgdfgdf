@@ -32,8 +32,11 @@ const loginValidation = [
   body('password').notEmpty(),
 ];
 
-router.post('/register', authLimiter, registerValidation, validate, register);
-router.post('/login', authLimiter, loginValidation, validate, login);
+// IMPORTANT: validate(...) returns the actual middleware. Calling `validate`
+// without arguments passes the function itself as middleware, which never
+// calls next() and hangs the request. Always invoke as validate(validationArray).
+router.post('/register', authLimiter, registerValidation, validate(registerValidation), register);
+router.post('/login', authLimiter, loginValidation, validate(loginValidation), login);
 router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);

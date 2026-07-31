@@ -10,6 +10,8 @@ export const apiLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Use a stable key — fall back to a constant for local testing where req.ip may be undefined.
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || 'local',
 });
 
 // Stricter limiter for auth endpoints
@@ -22,6 +24,7 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || 'local',
 });
 
 // Payment endpoint limiter
@@ -32,4 +35,5 @@ export const paymentLimiter = rateLimit({
     success: false,
     message: 'Too many payment requests, please try again later',
   },
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || 'local',
 });

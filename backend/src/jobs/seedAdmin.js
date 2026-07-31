@@ -1,11 +1,19 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { User } from '../models/User.js';
 import { SiteSettings } from '../models/SiteSettings.js';
 import { logger } from '../utils/logger.js';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from backend root (2 levels up from src/jobs/) and repo root (3 levels up).
+// On Vercel, env vars are injected directly so this is a no-op there.
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const seedAdmin = async () => {
   try {
