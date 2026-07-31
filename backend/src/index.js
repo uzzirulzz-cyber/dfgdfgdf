@@ -124,12 +124,16 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(notFound);
 app.use(errorHandler);
 
-// Start server (for local dev)
+// Start server (long-running hosts: local dev, Render, Railway, Fly.io, etc.)
+// On Vercel serverless, we skip app.listen() and just export the app — Vercel's
+// @vercel/node runtime handles the HTTP server. Vercel sets VERCEL=1 automatically.
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';  // Render requires 0.0.0.0 binding
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
 
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`);
+if (!isVercel) {
+  app.listen(PORT, HOST, () => {
+    logger.info(`Server running on ${HOST}:${PORT} (NODE_ENV=${process.env.NODE_ENV || 'development'})`);
   });
 }
 
